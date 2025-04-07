@@ -8,7 +8,7 @@ library(raster)
 # loop through each and create growing stack of cumulative precip - does not work with webservice ----
 # write to file
 cumPrecipAll <- stack()
-for(year in 2022:2023){
+for(year in 2023:2024){
     # create current date
     dateRangeStart=paste0(year,"-06-15")
     dateRangeEnd= paste0(year,"-09-30")
@@ -53,7 +53,7 @@ for(year in 2022:2023){
     proc.time() - ptm
 
 # write to file
-    writeRaster(tempGrid,filename=paste0("/home/crimmins/RProjects/ClimPlot/monsoonPercs/AZNM_PRISM_Monsoon_",year,"_cumPrecip.grd"), overwrite=TRUE)
+    writeRaster(tempGrid,filename=paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonPercs/AZNM_PRISM_Monsoon_",year,"_cumPrecip.grd"), overwrite=TRUE)
 
 
 # cumPrecipAll <- stack(cumPrecipAll , tempGrid)
@@ -62,9 +62,9 @@ print(year)
 # ----
 
 # load years into stack and reorder into days
-setwd("~/RProjects/ClimPlot/monsoonPercs")
-allCumSum <- do.call(stack, lapply(list.files(path = "~/RProjects/ClimPlot/monsoonPercs", pattern = "*.grd"), stack))
-writeRaster(allCumSum,filename=paste0("/home/crimmins/RProjects/ClimPlot/AZNM_PRISM_Monsoon_cumPrecip_1981_2023.grd"), overwrite=TRUE)
+setwd("~/RProjects/SWMonsoonMaps/monsoonPercs")
+allCumSum <- do.call(stack, lapply(list.files(path = "~/RProjects/SWMonsoonMaps/monsoonPercs", pattern = "*.grd"), stack))
+writeRaster(allCumSum,filename=paste0("/home/crimmins/RProjects/SWMonsoonMaps/AZNM_PRISM_Monsoon_cumPrecip_1981_2024.grd"), overwrite=TRUE)
 
 # load allCumSum
 allCumSum<-stack("/home/crimmins/RProjects/ClimPlot/AZNM_PRISM_Monsoon_cumPrecip_1981_2018.grd")

@@ -1,0 +1,44 @@
+---
+title: "`r paste0('SW US Monsoon - Daily Precipitation Maps: ',noquote(yearDir))`"
+date: "`r paste0('Created:',Sys.Date())`"
+output:
+  rmdformats::html_clean:
+    thumbnails: true
+    lightbox: true
+    gallery: true
+    fig_caption : true
+    highlight: kate
+---
+******
+[Return to main page here](index.html)
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=FALSE,
+	             cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE)
+opts_knit$set(width=75)
+```
+
+
+```{r, results = 'asis', fig.cap=TRUE, cache=FALSE}
+
+plots <- list.files(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/daily/"))
+dates<-substr(plots,19,28)
+j<-1
+for(i in plots){
+  filename <- file.path("/home","crimmins","RProjects","SWMonsoonMaps","monsoonMapshistorical",as.character(yearDir),"daily",i)
+  cat("\n") 
+  cat("![DailyPrecip](",filename,")\n")
+  cat(dates[j], "\n\n")
+  j=j+1
+}
+```

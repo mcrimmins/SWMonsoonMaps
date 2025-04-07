@@ -15,31 +15,35 @@ library(raster)
 library(rasterVis)
 library(PBSmapping)
 library(Hmisc)
-library(rgdal)
+#library(rgdal)
 library(readr)
 library(magick)
 library(leaflet)
+#library(leaflet.extras)
 library(mapview)
 library(leafem)
 library(htmlwidgets)
 library(rmarkdown)
 library(knitr)
 library(rmdformats)
+library(sf)
+library(tidyr)
+library(dplyr)
 
 
 # Loop through years
-yr1=2023
-yr2=2023
+yr1=2024
+yr2=2024
 
 for (yearDir in yr1:yr2)
 {
   # create dirs for year
-  dir.create(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir),showWarnings = FALSE)
-  dir.create(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/daily"),showWarnings = FALSE)
-  dir.create(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/leafletMaps"),showWarnings = FALSE)
+  dir.create(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir),showWarnings = FALSE)
+  dir.create(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/daily"),showWarnings = FALSE)
+  dir.create(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/leafletMaps"),showWarnings = FALSE)
   # copy markdown file into dir
-  file.copy("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/SWmonsoonTemplateHistorical.Rmd",
-            paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir), overwrite = TRUE)
+  file.copy("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/SWmonsoonTemplateHistorical.Rmd",
+            paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir), overwrite = TRUE)
   
   
 ## ---- download PRISM data ----
@@ -67,9 +71,16 @@ allDates<-seq(as.Date(dateRangeStart), as.Date(dateRangeEnd),1)
 # get shapefiles
 all_states <- map_data("state")
 all_counties<-map_data("county")
-tribes <- readOGR("/home/crimmins/RProjects/ClimPlot/tribes", "indlanp020")
+#tribes <- readOGR("/home/crimmins/RProjects/SWMonsoonMaps/tribes", "indlanp020")
 # load cities
-SWCities <- read_csv("/home/crimmins/RProjects/ClimPlot/SWCities.csv")
+#SWCities <- read_csv("/home/crimmins/RProjects/SWMonsoonMaps/SWCities.csv")
+
+##### NEW SF CODE
+tribes <- st_read("/home/crimmins/RProjects/StateMonsoonMaps/shps/tribes", "indlanp020")
+# load cities
+SWCities <- readr::read_csv("/home/crimmins/RProjects/StateMonsoonMaps/SWCities.csv")
+#####
+
 
 # AZ/NM bbox -115.004883,31.184609,-102.524414,37.387617
  ACISbbox<-"-115,31,-102,38"
@@ -115,7 +126,7 @@ totalPrecipAll<-calc(gridStack, sum, na.rm=TRUE)
 totalPrecipAll[totalPrecipAll <= 0] <- NA
   totalPrecipAll_w0[totalPrecipAll_w0 < 0]<- NA
 # percent of average
-JJASppt<-stack("/home/crimmins/RProjects/ClimPlot/PRISM/JJASppt.grd")
+JJASppt<-stack("/home/crimmins/RProjects/SWMonsoonMaps/PRISM/JJASppt.grd")
   JJASppt<-JJASppt/25.4
 moStack<-as.numeric(format(allDates[length(allDates)], format='%m'))-5
 
@@ -152,7 +163,7 @@ daysSince <-length(allDates)-(calc(gridStack, fun=function(x){max(which(x > 0.05
 
   # percentile rank of precip
   # load allCumSum
-  allCumSum<-stack("/home/crimmins/RProjects/ClimPlot/AZNM_PRISM_Monsoon_cumPrecip_1981_2022.grd")
+  allCumSum<-stack("/home/crimmins/RProjects/SWMonsoonMaps/data/AZNM_PRISM_Monsoon_cumPrecip_1981_2024.grd")
   # get subsets for the current day
   doyCumSum<-subset(allCumSum, seq(i,nlayers(allCumSum)-(108-i),by=108))
   # add current year
@@ -169,7 +180,7 @@ dailyAnoms= list()
 for(i in 2:nlayers(gridStack)){
   totalPrecip<-calc(gridStack[[1:i]], sum, na.rm=TRUE)
   # percent of average
-  JJASppt<-stack("/home/crimmins/RProjects/ClimPlot/PRISM/JJASppt.grd")
+  JJASppt<-stack("/home/crimmins/RProjects/SWMonsoonMaps/PRISM/JJASppt.grd")
   JJASppt<-JJASppt/25.4
   moStack<-as.numeric(format(allDates[i], format='%m'))-5
   
@@ -219,23 +230,23 @@ p<-ggplot(dailyAnomsMelt, aes(x=Date,y=Coverage,fill=Anomaly))+
         axis.text.x = element_text(angle = -45, hjust = 0))
 
       # write out file
-      png(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_Anomaly_TS.png"), width = 11, height = 8, units = "in", res = 300L)
+      png(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_Anomaly_TS.png"), width = 11, height = 8, units = "in", res = 300L)
       #grid.newpage()
       print(p, newpage = FALSE)
       dev.off()
       
       # add logos
       # Call back the plot
-      plot <- image_read(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_Anomaly_TS.png"))
+      plot <- image_read(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_Anomaly_TS.png"))
       # And bring in a logo
-      logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+      logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
       logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
       # Stack them on top of each other
       #final_plot <- image_append((c(plot, logo)), stack = TRUE)
       #final_plot <- image_mosaic((c(plot, logo)))
       final_plot <- image_composite(plot, logo, offset = "+180+2130")
       # And overwrite the plot without a logo
-      image_write(final_plot, paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_Anomaly_TS.png"))
+      image_write(final_plot, paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_Anomaly_TS.png"))
 # ----
 
       # ----
@@ -243,11 +254,19 @@ p<-ggplot(dailyAnomsMelt, aes(x=Date,y=Coverage,fill=Anomaly))+
       # precip threshold
       thresh<-0.01
       # load datasets
-      load("/home/crimmins/RProjects/ClimPlot/AZ_doyStats.RData")
-      load("/home/crimmins/RProjects/ClimPlot/NM_doyStats.RData")
-      USPoly <- getData("GADM", country="USA", level=1)
-      NMPoly<-subset(USPoly, NAME_1=="New Mexico")
-      AZPoly<-subset(USPoly, NAME_1=="Arizona")
+      load("/home/crimmins/RProjects/SWMonsoonMaps/data/AZ_doyStats.RData")
+      load("/home/crimmins/RProjects/SWMonsoonMaps/data/NM_doyStats.RData")
+
+      # get poly data --- OLD
+      #USPoly <- getData("GADM", country="USA", level=1)
+      #NMPoly<-subset(USPoly, NAME_1=="New Mexico")
+      #AZPoly<-subset(USPoly, NAME_1=="Arizona")
+      # NEW CODE
+      USPoly <- geodata::gadm(country = "USA", level = 1, path = tempdir(), resolution = 2)
+      USPoly<- st_as_sf(USPoly)
+        NMPoly<-as(USPoly[USPoly$NAME_1=="New Mexico",], "Spatial")
+        AZPoly<-as(USPoly[USPoly$NAME_1=="Arizona",], "Spatial")
+      
       # extract extents
       currYearClip <- raster::mask(gridStackTS, AZPoly)
       # get counts
@@ -313,24 +332,24 @@ p<-ggplot(dailyAnomsMelt, aes(x=Date,y=Coverage,fill=Anomaly))+
               plot.title=element_text(size=14, face = "bold"))
       
       # write out file
-      png(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/AZMonsoonDays.png"), width = 11, height = 8, units = "in", res = 300L)
+      png(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/AZMonsoonDays.png"), width = 11, height = 8, units = "in", res = 300L)
       #grid.newpage()
       print(p, newpage = FALSE)
       dev.off()
       
       # add logos
       # Call back the plot
-      plot <- image_read(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/AZMonsoonDays.png"))
+      plot <- image_read(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/AZMonsoonDays.png"))
       # And bring in a logo
       #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png") 
-      logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+      logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
       logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
       # Stack them on top of each other
       #final_plot <- image_append((c(plot, logo)), stack = TRUE)
       #final_plot <- image_mosaic((c(plot, logo)))
       final_plot <- image_composite(plot, logo, offset = "+150+2150")
       # And overwrite the plot without a logo
-      image_write(final_plot, paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/AZMonsoonDays.png"))   
+      image_write(final_plot, paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/AZMonsoonDays.png"))   
       
       #  NM plot of daily monsoon extent by year
       p<-ggplot(NMts, aes(dummyDate.y,percExt))+
@@ -351,24 +370,24 @@ p<-ggplot(dailyAnomsMelt, aes(x=Date,y=Coverage,fill=Anomaly))+
               plot.title=element_text(size=14, face = "bold"))
       
       # write out file
-      png(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/NMMonsoonDays.png"), width = 11, height = 8, units = "in", res = 300L)
+      png(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/NMMonsoonDays.png"), width = 11, height = 8, units = "in", res = 300L)
       #grid.newpage()
       print(p, newpage = FALSE)
       dev.off()
       
       # add logos
       # Call back the plot
-      plot <- image_read(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/NMMonsoonDays.png"))
+      plot <- image_read(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/NMMonsoonDays.png"))
       # And bring in a logo
       #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png") 
-      logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+      logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
       logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
       # Stack them on top of each other
       #final_plot <- image_append((c(plot, logo)), stack = TRUE)
       #final_plot <- image_mosaic((c(plot, logo)))
       final_plot <- image_composite(plot, logo, offset = "+150+2150")
       # And overwrite the plot without a logo
-      image_write(final_plot, paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/NMMonsoonDays.png"))   
+      image_write(final_plot, paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/NMMonsoonDays.png"))   
       
       # ----    
       
@@ -392,24 +411,24 @@ p<-ggplot(dailyAnomsMelt, aes(x=Date,y=Coverage,fill=Anomaly))+
               plot.title=element_text(size=14, face = "bold"))
         
       # write out file
-      png(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PrecipByElevation.png"), width = 11, height = 8, units = "in", res = 300L)
+      png(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PrecipByElevation.png"), width = 11, height = 8, units = "in", res = 300L)
       #grid.newpage()
       print(p, newpage = FALSE)
       dev.off()
       
       # add logos
       # Call back the plot
-      plot <- image_read(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PrecipByElevation.png"))
+      plot <- image_read(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PrecipByElevation.png"))
       # And bring in a logo
       #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png") 
-      logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+      logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
       logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
       # Stack them on top of each other
       #final_plot <- image_append((c(plot, logo)), stack = TRUE)
       #final_plot <- image_mosaic((c(plot, logo)))
       final_plot <- image_composite(plot, logo, offset = "+150+2150")
       # And overwrite the plot without a logo
-      image_write(final_plot, paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PrecipByElevation.png"))   
+      image_write(final_plot, paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PrecipByElevation.png"))   
 # END precip/elevation plots ----             
   
 # PLOT ANOM vs elevation categories ----
@@ -432,24 +451,24 @@ p<-ggplot(dailyAnomsMelt, aes(x=Date,y=Coverage,fill=Anomaly))+
       
       
       # write out file
-      png(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_AnomByElevation.png"), width = 11, height = 8, units = "in", res = 300L)
+      png(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_AnomByElevation.png"), width = 11, height = 8, units = "in", res = 300L)
       #grid.newpage()
       print(p, newpage = FALSE)
       dev.off()
       
       # add logos
       # Call back the plot
-      plot <- image_read(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_AnomByElevation.png"))
+      plot <- image_read(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_AnomByElevation.png"))
       # And bring in a logo
       #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png") 
-      logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+      logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
       logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
       # Stack them on top of each other
       #final_plot <- image_append((c(plot, logo)), stack = TRUE)
       #final_plot <- image_mosaic((c(plot, logo)))
       final_plot <- image_composite(plot, logo, offset = "+150+2150")
       # And overwrite the plot without a logo
-      image_write(final_plot, paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_AnomByElevation.png"))   
+      image_write(final_plot, paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_AnomByElevation.png"))   
       
 # END anom elevation plots ----             
       
@@ -482,7 +501,13 @@ precLabs<-as.character(seq(0,20,2))
 
 #theme_set(theme_bw())
 
-p<-gplot(totalPrecipAll) + geom_tile(aes(fill = value)) +
+  # Convert raster to dataframe for ggplot
+  prec_df <- as.data.frame(totalPrecipAll, xy = TRUE, na.rm = FALSE)
+  colnames(prec_df) <- c("x", "y", "value")  # Adjust if needed  
+
+  p <- ggplot() +
+    geom_raster(data = prec_df, aes(x = x, y = y, fill = value)) +    
+#p<-gplot(totalPrecipAll) + geom_tile(aes(fill = value)) +
   #scale_fill_gradient2(low = 'white', high = 'blue') +
   #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="darkgoldenrod", 
   #                     name="inches", limits=c(0,20),oob=squish)+
@@ -491,7 +516,7 @@ p<-gplot(totalPrecipAll) + geom_tile(aes(fill = value)) +
                                           name="inches", limits=c(0,20),oob=squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
   guides(fill= guide_colorbar(barheight=15,nbin = 500, raster = FALSE))+
   
-  coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
+  #coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
   xlab("Longitude") + ylab("Latitude") 
 
 p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black", fill=NA, size=0.25 )+
@@ -502,41 +527,46 @@ p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black"
                       "\nThe University of Arizona\nhttps://cals.arizona.edu/climate/\nData Source: PRISM Climate Group\nRCC-ACIS"))+
   theme(plot.title=element_text(size=14, face = "bold"))
 
-p<-p+geom_path(data = tribes_df, 
-               aes(x = long, y = lat, group = group),
-               color = 'azure4', size = .2)
+# p<-p+geom_path(data = tribes_df,
+#                aes(x = long, y = lat, group = group),
+#                color = 'azure4', size = .2)
+
+p<-p+geom_sf(data = tribes_df, fill = NA, color = 'azure4', size = .25)
 
 p<-p+geom_point(data = SWCities, aes(x = lon, y = lat), size = 1, 
            shape = 20)
 
 p<-p+geom_text(data = SWCities, aes(x = lon, y = lat, label = City), 
-            size = 3, col = "black", fontface = "bold", nudge_y = 0.1)
+            size = 3, col = "black", fontface = "bold", nudge_y = 0.1)+
+  coord_sf(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)
 
 # write out file
-png(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_TotalPrecip.png"), width = 16, height = 8, units = "in", res = 300L)
+png(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_TotalPrecip.png"), width = 12, height = 8, units = "in", res = 300L)
 #grid.newpage()
 print(p, newpage = FALSE)
 dev.off()
 
 # add logos
 # Call back the plot
-plot <- image_read(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_TotalPrecip.png"))
+plot <- image_read(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_TotalPrecip.png"))
 # And bring in a logo
 #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
-logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
 logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
 # Stack them on top of each other
 #final_plot <- image_append((c(plot, logo)), stack = TRUE)
 #final_plot <- image_mosaic((c(plot, logo)))
-final_plot <- image_composite(plot, logo, offset = "+510+2150")
+#final_plot <- image_composite(plot, logo, offset = "+250+2150")
+final_plot <- image_composite(plot, logo, offset = "+250+2150")
 # And overwrite the plot without a logo
-image_write(final_plot, paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_TotalPrecip.png"))
+image_write(final_plot, paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_TotalPrecip.png"))
 
 # leaflet interactive
 pal <- colorNumeric(c("lightblue", "dodgerblue3", "palegreen","green4","salmon","orangered3",
                       "lightgoldenrod1","orange2","plum2","purple"), values(totalPrecipAll),
                     na.color = "transparent")
 crs(totalPrecipAll) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+#totalPrecipAll_ll <- raster::projectRaster(totalPrecipAll, crs = sp::CRS("EPSG:4326"))
 
 leafMap<-leaflet() %>% addTiles() %>%
           addRasterImage(totalPrecipAll, colors = pal, opacity = 0.8, layerId = "Inches") %>%
@@ -545,7 +575,7 @@ leafMap<-leaflet() %>% addTiles() %>%
           addMouseCoordinates() %>%
           addImageQuery(totalPrecipAll, type="mousemove", layerId = "Inches", prefix = "")
 
-saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_TotalPrecip.html"))
+saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_TotalPrecip.html"),selfcontained = TRUE)
 
 # ----- end Total Precip ----
 
@@ -558,8 +588,14 @@ precLabs[9]<-">400"
 precLabs[1]<-"0"
 #precBreaksmin<-seq(1,19,2)
 
+# Convert raster to dataframe for ggplot
+prec_df <- as.data.frame(percPrecip, xy = TRUE, na.rm = FALSE)
+colnames(prec_df) <- c("x", "y", "value")  # Adjust if needed  
+
+p <- ggplot() +
+  geom_raster(data = prec_df, aes(x = x, y = y, fill = value)) + 
 #theme_set(theme_bw())
-p<-gplot(percPrecip) + geom_tile(aes(fill = value)) +
+#p<-gplot(percPrecip) + geom_tile(aes(fill = value)) +
   #scale_fill_gradient2(low = 'white', high = 'blue') +
   #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="darkgoldenrod", 
   #                     name="inches", limits=c(0,20),oob=squish)+
@@ -568,7 +604,7 @@ p<-gplot(percPrecip) + geom_tile(aes(fill = value)) +
                        name="% of avg", limits=c(0,400),oob=squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
   guides(fill= guide_colorbar(barheight=15,nbin = 500, raster = FALSE))+
   
-  coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
+  #coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
   xlab("Longitude") + ylab("Latitude") 
 
 p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black", fill=NA, size=0.25 )+
@@ -579,35 +615,38 @@ p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black"
                       "\nThe University of Arizona\nhttps://cals.arizona.edu/climate/\nData Source: PRISM Climate Group\nRCC-ACIS"))+
   theme(plot.title=element_text(size=14, face = "bold"))
 
-p<-p+geom_path(data = tribes_df, 
-               aes(x = long, y = lat, group = group),
-               color = 'azure4', size = .2)
+# p<-p+geom_path(data = tribes_df,
+#                aes(x = long, y = lat, group = group),
+#                color = 'azure4', size = .2)
+
+p<-p+geom_sf(data = tribes_df, fill = NA, color = 'azure4', size = .25)
 
 p<-p+geom_point(data = SWCities, aes(x = lon, y = lat), size = 1, 
                 shape = 20)
 
 p<-p+geom_text(data = SWCities, aes(x = lon, y = lat, label = City), 
-               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)
+               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)+
+  coord_sf(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)
 
 # write out file
-png(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PercentPrecip.png"), width = 16, height = 8, units = "in", res = 300L)
+png(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PercentPrecip.png"), width = 12, height = 8, units = "in", res = 300L)
 #grid.newpage()
 print(p, newpage = FALSE)
 dev.off()
 
 # add logos
 # Call back the plot
-plot <- image_read(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PercentPrecip.png"))
+plot <- image_read(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PercentPrecip.png"))
 # And bring in a logo
 #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
-logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
 logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
 # Stack them on top of each other
 #final_plot <- image_append((c(plot, logo)), stack = TRUE)
 #final_plot <- image_mosaic((c(plot, logo)))
-final_plot <- image_composite(plot, logo, offset = "+510+2150")
+final_plot <- image_composite(plot, logo, offset = "+250+2150")
 # And overwrite the plot without a logo
-image_write(final_plot, paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PercentPrecip.png"))
+image_write(final_plot, paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PercentPrecip.png"))
 
 # leaflet interactive
 pal <- colorNumeric(c("darkgoldenrod4", "white", "darkgreen","blue1","deepskyblue"), c(0,400),
@@ -621,7 +660,7 @@ leafMap<-leaflet() %>% addTiles() %>%
   addMouseCoordinates() %>%
   addImageQuery(percPrecip, type="mousemove", layerId = "% of Avg", digits = 0, prefix = "")
 
-saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_PercentPrecip.html"))
+saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_PercentPrecip.html"))
 # ----- end PERCENT AVG ----
 
 
@@ -634,8 +673,14 @@ precLabs[11]<-"100"
 precLabs[1]<-"0"
 #precBreaksmin<-seq(1,19,2)
 
+# Convert raster to dataframe for ggplot
+prec_df <- as.data.frame(percRankPrecip, xy = TRUE, na.rm = FALSE)
+colnames(prec_df) <- c("x", "y", "value")  # Adjust if needed  
+
+p <- ggplot() +
+  geom_raster(data = prec_df, aes(x = x, y = y, fill = value)) + 
 #theme_set(theme_bw())
-p<-gplot(percRankPrecip) + geom_tile(aes(fill = value)) +
+#p<-gplot(percRankPrecip) + geom_tile(aes(fill = value)) +
   #scale_fill_gradient2(low = 'white', high = 'blue') +
   #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="darkgoldenrod", 
   #                     name="inches", limits=c(0,20),oob=squish)+
@@ -644,46 +689,49 @@ p<-gplot(percRankPrecip) + geom_tile(aes(fill = value)) +
                        name="%tile", limits=c(0,100),oob=squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
   guides(fill= guide_colorbar(barheight=15,nbin = 500, raster = FALSE))+
   
-  coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
+  #coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
   xlab("Longitude") + ylab("Latitude") 
 
 p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black", fill=NA, size=0.25 )+
   #scale_x_continuous(breaks = c(-120,-140))+
   #ggtitle("Daily Total Precip (inches) - PRISM")+
-  ggtitle(paste0("Total Precipitation Percentile Rank (1981-2018 ranking period): ",allDates[1]," to ",allDates[length(allDates)]))+
+  ggtitle(paste0("Total Precipitation Percentile Rank (1981-2024 ranking period): ",allDates[1]," to ",allDates[length(allDates)]))+
   labs(caption=paste0("Plot created: ",format(Sys.time(), "%Y-%m-%d"),
                       "\nThe University of Arizona\nhttps://cals.arizona.edu/climate/\nData Source: PRISM Climate Group\nRCC-ACIS"))+
   theme(plot.title=element_text(size=14, face = "bold"))
 
-p<-p+geom_path(data = tribes_df, 
-               aes(x = long, y = lat, group = group),
-               color = 'azure4', size = .2)
+# p<-p+geom_path(data = tribes_df,
+#                aes(x = long, y = lat, group = group),
+#                color = 'azure4', size = .2)
+
+p<-p+geom_sf(data = tribes_df, fill = NA, color = 'azure4', size = .25)
 
 p<-p+geom_point(data = SWCities, aes(x = lon, y = lat), size = 1, 
                 shape = 20)
 
 p<-p+geom_text(data = SWCities, aes(x = lon, y = lat, label = City), 
-               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)
+               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)+
+  coord_sf(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)
 
 # write out file
-png(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_RankPrecip.png"), width = 16, height = 8, units = "in", res = 300L)
+png(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_RankPrecip.png"), width = 12, height = 8, units = "in", res = 300L)
 #grid.newpage()
 print(p, newpage = FALSE)
 dev.off()
 
 # add logos
 # Call back the plot
-plot <- image_read(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_RankPrecip.png"))
+plot <- image_read(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_RankPrecip.png"))
 # And bring in a logo
 #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
-logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
 logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
 # Stack them on top of each other
 #final_plot <- image_append((c(plot, logo)), stack = TRUE)
 #final_plot <- image_mosaic((c(plot, logo)))
-final_plot <- image_composite(plot, logo, offset = "+510+2150")
+final_plot <- image_composite(plot, logo, offset = "+250+2150")
 # And overwrite the plot without a logo
-image_write(final_plot, paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_RankPrecip.png"))
+image_write(final_plot, paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_RankPrecip.png"))
 
 # leaflet interactive
 pal <- colorNumeric(c("darkgoldenrod4", "white", "darkgreen"), c(0,100),
@@ -697,7 +745,7 @@ leafMap<-leaflet() %>% addTiles() %>%
   addMouseCoordinates() %>%
   addImageQuery(percRankPrecip, type="mousemove", layerId = "%tile", digits = 0, prefix = "")
 
-saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_RankPrecip.html"), selfcontained = FALSE)
+saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_RankPrecip.html"), selfcontained = FALSE)
 # ----- end PERCENTILE ----
 
 
@@ -710,8 +758,14 @@ precLabs[16]<-">75"
 precLabs[1]<-"0"
 #precBreaksmin<-seq(1,19,2)
 
+# Convert raster to dataframe for ggplot
+prec_df <- as.data.frame(percRainDays, xy = TRUE, na.rm = FALSE)
+colnames(prec_df) <- c("x", "y", "value")  # Adjust if needed  
+
+p <- ggplot() +
+  geom_raster(data = prec_df, aes(x = x, y = y, fill = value)) + 
 #theme_set(theme_bw())
-p<-gplot(percRainDays) + geom_tile(aes(fill = value)) +
+#p<-gplot(percRainDays) + geom_tile(aes(fill = value)) +
   #scale_fill_gradient2(low = 'white', high = 'blue') +
   #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="darkgoldenrod", 
   #                     name="inches", limits=c(0,20),oob=squish)+
@@ -720,7 +774,7 @@ p<-gplot(percRainDays) + geom_tile(aes(fill = value)) +
                        name="%", limits=c(0,75),oob=squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
   guides(fill= guide_colorbar(barheight=15,nbin = 500, raster = FALSE))+
   
-  coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
+  #coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
   xlab("Longitude") + ylab("Latitude") 
 
 p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black", fill=NA, size=0.25 )+
@@ -731,35 +785,38 @@ p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black"
                       "\nThe University of Arizona\nhttps://cals.arizona.edu/climate/\nData Source: PRISM Climate Group\nRCC-ACIS"))+
   theme(plot.title=element_text(size=14, face = "bold"))
 
-p<-p+geom_path(data = tribes_df, 
-               aes(x = long, y = lat, group = group),
-               color = 'azure4', size = .2)
+# p<-p+geom_path(data = tribes_df,
+#                aes(x = long, y = lat, group = group),
+#                color = 'azure4', size = .2)
+
+p<-p+geom_sf(data = tribes_df, fill = NA, color = 'azure4', size = .25)
 
 p<-p+geom_point(data = SWCities, aes(x = lon, y = lat), size = 1, 
                 shape = 20)
 
 p<-p+geom_text(data = SWCities, aes(x = lon, y = lat, label = City), 
-               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)
+               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)+
+  coord_sf(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)
 
 # write out file
-png(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PercentDays.png"), width = 16, height = 8, units = "in", res = 300L)
+png(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PercentDays.png"), width = 12, height = 8, units = "in", res = 300L)
 #grid.newpage()
 print(p, newpage = FALSE)
 dev.off()
 
 # add logos
 # Call back the plot
-plot <- image_read(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PercentDays.png"))
+plot <- image_read(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PercentDays.png"))
 # And bring in a logo
 #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
-logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
 logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
 # Stack them on top of each other
 #final_plot <- image_append((c(plot, logo)), stack = TRUE)
 #final_plot <- image_mosaic((c(plot, logo)))
-final_plot <- image_composite(plot, logo, offset = "+510+2150")
+final_plot <- image_composite(plot, logo, offset = "+250+2150")
 # And overwrite the plot without a logo
-image_write(final_plot, paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PercentDays.png"))
+image_write(final_plot, paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_PercentDays.png"))
 
 # leaflet interactive
 pal <- colorNumeric(c("yellow2", "green", "blue","red","orange"), c(0,75),
@@ -773,7 +830,7 @@ leafMap<-leaflet() %>% addTiles() %>%
   addMouseCoordinates() %>%
   leafem::addImageQuery(percRainDays, type="mousemove", layerId = "perc_days", digits = 0, prefix = "")
 
-saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_PercentDays.html"))
+saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_PercentDays.html"))
 # ----- end PERCENT AVG ----
 
 # SDII Map -----
@@ -785,8 +842,14 @@ precLabs[16]<-">1.5"
 precLabs[1]<-"0"
 #precBreaksmin<-seq(1,19,2)
 
+# Convert raster to dataframe for ggplot
+prec_df <- as.data.frame(sdii, xy = TRUE, na.rm = FALSE)
+colnames(prec_df) <- c("x", "y", "value")  # Adjust if needed  
+
+p <- ggplot() +
+  geom_raster(data = prec_df, aes(x = x, y = y, fill = value)) + 
 #theme_set(theme_bw())
-p<-gplot(sdii) + geom_tile(aes(fill = value)) +
+#p<-gplot(sdii) + geom_tile(aes(fill = value)) +
   #scale_fill_gradient2(low = 'white', high = 'blue') +
   #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="darkgoldenrod", 
   #                     name="inches", limits=c(0,20),oob=squish)+
@@ -795,7 +858,7 @@ p<-gplot(sdii) + geom_tile(aes(fill = value)) +
                        name="in/day", limits=c(0,1.5),oob=squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
   guides(fill= guide_colorbar(barheight=15,nbin = 500, raster = FALSE))+
   
-  coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
+  #coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
   xlab("Longitude") + ylab("Latitude") 
 
 p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black", fill=NA, size=0.25 )+
@@ -806,35 +869,38 @@ p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black"
                       "\nThe University of Arizona\nhttps://cals.arizona.edu/climate/\nData Source: PRISM Climate Group\nRCC-ACIS"))+
   theme(plot.title=element_text(size=14, face = "bold"))
 
-p<-p+geom_path(data = tribes_df, 
-               aes(x = long, y = lat, group = group),
-               color = 'azure4', size = .2)
+# p<-p+geom_path(data = tribes_df,
+#                aes(x = long, y = lat, group = group),
+#                color = 'azure4', size = .2)
+
+p<-p+geom_sf(data = tribes_df, fill = NA, color = 'azure4', size = .25)
 
 p<-p+geom_point(data = SWCities, aes(x = lon, y = lat), size = 1, 
                 shape = 20)
 
 p<-p+geom_text(data = SWCities, aes(x = lon, y = lat, label = City), 
-               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)
+               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)+
+  coord_sf(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)
 
 # write out file
-png(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_IntensityIndex.png"), width = 16, height = 8, units = "in", res = 300L)
+png(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_IntensityIndex.png"), width = 12, height = 8, units = "in", res = 300L)
 #grid.newpage()
 print(p, newpage = FALSE)
 dev.off()
 
 # add logos
 # Call back the plot
-plot <- image_read(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_IntensityIndex.png"))
+plot <- image_read(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_IntensityIndex.png"))
 # And bring in a logo
 #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
-logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
 logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
 # Stack them on top of each other
 #final_plot <- image_append((c(plot, logo)), stack = TRUE)
 #final_plot <- image_mosaic((c(plot, logo)))
-final_plot <- image_composite(plot, logo, offset = "+510+2150")
+final_plot <- image_composite(plot, logo, offset = "+250+2150")
 # And overwrite the plot without a logo
-image_write(final_plot, paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_IntensityIndex.png"))
+image_write(final_plot, paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_IntensityIndex.png"))
 
 # leaflet interactive
 pal <- colorNumeric(c("yellow", "blue", "red","orange"), c(0,1.5),
@@ -848,7 +914,7 @@ leafMap<-leaflet() %>% addTiles() %>%
   #addMouseCoordinates() %>%
   addImageQuery(sdii, type="mousemove", layerId = "in per day", digits = 0, prefix = "")
 
-saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_IntensityIndex.html"))
+saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_IntensityIndex.html"))
 # ----- end SDII ----
 
 # MAX DAILY precip Map -----
@@ -863,7 +929,13 @@ precLabs[1]<-"0.01"
 
 #theme_set(theme_bw())
 
-p<-gplot(maxRain) + geom_tile(aes(fill = value)) +
+# Convert raster to dataframe for ggplot
+prec_df <- as.data.frame(maxRain, xy = TRUE, na.rm = FALSE)
+colnames(prec_df) <- c("x", "y", "value")  # Adjust if needed  
+
+p <- ggplot() +
+  geom_raster(data = prec_df, aes(x = x, y = y, fill = value)) + 
+#p<-gplot(maxRain) + geom_tile(aes(fill = value)) +
   #scale_fill_gradient2(low = 'white', high = 'blue') +
   #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="darkgoldenrod", 
   #                     name="inches", limits=c(0,20),oob=squish)+
@@ -872,7 +944,7 @@ p<-gplot(maxRain) + geom_tile(aes(fill = value)) +
                        name="inches", limits=c(0,6),oob=squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
   guides(fill= guide_colorbar(barheight=15,nbin = 500, raster = FALSE))+
   
-  coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
+  #coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
   xlab("Longitude") + ylab("Latitude") 
 
 p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black", fill=NA, size=0.25 )+
@@ -883,35 +955,38 @@ p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black"
                       "\nThe University of Arizona\nhttps://cals.arizona.edu/climate/\nData Source: PRISM Climate Group\nRCC-ACIS"))+
   theme(plot.title=element_text(size=14, face = "bold"))
 
-p<-p+geom_path(data = tribes_df, 
-               aes(x = long, y = lat, group = group),
-               color = 'azure4', size = .2)
+# p<-p+geom_path(data = tribes_df,
+#                aes(x = long, y = lat, group = group),
+#                color = 'azure4', size = .2)
+
+p<-p+geom_sf(data = tribes_df, fill = NA, color = 'azure4', size = .25)
 
 p<-p+geom_point(data = SWCities, aes(x = lon, y = lat), size = 1, 
                 shape = 20)
 
 p<-p+geom_text(data = SWCities, aes(x = lon, y = lat, label = City), 
-               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)
+               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)+
+  coord_sf(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)
 
 # write out file
-png(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_MaxPrecip.png"), width = 16, height = 8, units = "in", res = 300L)
+png(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_MaxPrecip.png"), width = 12, height = 8, units = "in", res = 300L)
 #grid.newpage()
 print(p, newpage = FALSE)
 dev.off()
 
 # add logos
 # Call back the plot
-plot <- image_read(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_MaxPrecip.png"))
+plot <- image_read(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_MaxPrecip.png"))
 # And bring in a logo
 #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
-logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
 logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
 # Stack them on top of each other
 #final_plot <- image_append((c(plot, logo)), stack = TRUE)
 #final_plot <- image_mosaic((c(plot, logo)))
-final_plot <- image_composite(plot, logo, offset = "+510+2150")
+final_plot <- image_composite(plot, logo, offset = "+250+2150")
 # And overwrite the plot without a logo
-image_write(final_plot, paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_MaxPrecip.png"))
+image_write(final_plot, paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_MaxPrecip.png"))
 
 # leaflet interactive
 pal <- colorNumeric(c("lightblue", "dodgerblue3", "palegreen","green4","salmon","orangered3",
@@ -926,7 +1001,7 @@ leafMap<-leaflet() %>% addTiles() %>%
   addMouseCoordinates() %>%
   addImageQuery(maxRain, type="mousemove", layerId = "Inches", prefix = "")
 
-saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_MaxPrecip.html"))
+saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_MaxPrecip.html"))
 
 # ----- end MAX DAILY ----
 
@@ -940,8 +1015,13 @@ precLabs[1]<-"0"
 #precBreaksmin<-seq(1,19,2)
 
 #theme_set(theme_bw())
+# Convert raster to dataframe for ggplot
+prec_df <- as.data.frame(daysSince, xy = TRUE, na.rm = FALSE)
+colnames(prec_df) <- c("x", "y", "value")  # Adjust if needed  
 
-p<-gplot(daysSince) + geom_tile(aes(fill = value)) +
+p <- ggplot() +
+  geom_raster(data = prec_df, aes(x = x, y = y, fill = value)) + 
+#p<-gplot(daysSince) + geom_tile(aes(fill = value)) +
   #scale_fill_gradient2(low = 'white', high = 'blue') +
   #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="darkgoldenrod", 
   #                     name="inches", limits=c(0,20),oob=squish)+
@@ -950,7 +1030,7 @@ p<-gplot(daysSince) + geom_tile(aes(fill = value)) +
                        name="days", limits=c(0,30),oob=squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
   guides(fill= guide_colorbar(barheight=15,nbin = 30, raster = FALSE))+
   
-  coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
+  #coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
   xlab("Longitude") + ylab("Latitude") 
 
 p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black", fill=NA, size=0.25 )+
@@ -961,35 +1041,38 @@ p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black"
                       "\nThe University of Arizona\nhttps://cals.arizona.edu/climate/\nData Source: PRISM Climate Group\nRCC-ACIS"))+
   theme(plot.title=element_text(size=14, face = "bold"))
 
-p<-p+geom_path(data = tribes_df, 
-               aes(x = long, y = lat, group = group),
-               color = 'azure4', size = .2)
+# p<-p+geom_path(data = tribes_df,
+#                aes(x = long, y = lat, group = group),
+#                color = 'azure4', size = .2)
+
+p<-p+geom_sf(data = tribes_df, fill = NA, color = 'azure4', size = .25)
 
 p<-p+geom_point(data = SWCities, aes(x = lon, y = lat), size = 1, 
                 shape = 20)
 
 p<-p+geom_text(data = SWCities, aes(x = lon, y = lat, label = City), 
-               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)
+               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)+
+  coord_sf(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)
 
 # write out file
-png(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_DaysSince.png"), width = 16, height = 8, units = "in", res = 300L)
+png(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_DaysSince.png"), width = 12, height = 8, units = "in", res = 300L)
 #grid.newpage()
 print(p, newpage = FALSE)
 dev.off()
 
 # add logos
 # Call back the plot
-plot <- image_read(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_DaysSince.png"))
+plot <- image_read(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_DaysSince.png"))
 # And bring in a logo
 #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
-logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
 logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
 # Stack them on top of each other
 #final_plot <- image_append((c(plot, logo)), stack = TRUE)
 #final_plot <- image_mosaic((c(plot, logo)))
-final_plot <- image_composite(plot, logo, offset = "+510+2150")
+final_plot <- image_composite(plot, logo, offset = "+250+2150")
 # And overwrite the plot without a logo
-image_write(final_plot, paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_DaysSince.png"))
+image_write(final_plot, paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_DaysSince.png"))
 
 # leaflet interactive
 pal <- colorNumeric(c("deepskyblue3","cyan","palegreen1","seagreen2","khaki","yellow","orange","orangered","red"), c(0,max(values(daysSince),na.rm = TRUE)+1),
@@ -1009,7 +1092,7 @@ leafMap<-leaflet() %>%
   #addLogo("https://cals.arizona.edu/climate/misc/UA_CSAP_CLIMAS_logos.png", src = "remote",
   #        position="bottomleft",width=210, height=129)
 
-saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_DaysSince.html"))
+saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_DaysSince.html"))
 # END DAYS SINCE ----
 
 # LATEST DAILY precip Map -----
@@ -1024,7 +1107,13 @@ precLabs[1]<-"0.01"
 
 #theme_set(theme_bw())
 
-p<-gplot(gridStack[[max(nlayers(gridStack))]]) + geom_tile(aes(fill = value)) +
+# Convert raster to dataframe for ggplot
+prec_df <- as.data.frame(gridStack[[max(nlayers(gridStack))]], xy = TRUE, na.rm = FALSE)
+colnames(prec_df) <- c("x", "y", "value")  # Adjust if needed  
+
+p <- ggplot() +
+  geom_raster(data = prec_df, aes(x = x, y = y, fill = value)) + 
+#p<-gplot(gridStack[[max(nlayers(gridStack))]]) + geom_tile(aes(fill = value)) +
   #scale_fill_gradient2(low = 'white', high = 'blue') +
   #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="darkgoldenrod", 
   #                     name="inches", limits=c(0,20),oob=squish)+
@@ -1033,7 +1122,7 @@ p<-gplot(gridStack[[max(nlayers(gridStack))]]) + geom_tile(aes(fill = value)) +
                        name="inches", limits=c(0,6),oob=squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
   guides(fill= guide_colorbar(barheight=15,nbin = 500, raster = FALSE))+
   
-  coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
+  #coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
   xlab("Longitude") + ylab("Latitude") 
 
 p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black", fill=NA, size=0.25 )+
@@ -1044,35 +1133,38 @@ p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black"
                       "\nThe University of Arizona\nhttps://cals.arizona.edu/climate/\nData Source: PRISM Climate Group\nRCC-ACIS"))+
   theme(plot.title=element_text(size=14, face = "bold"))
 
-p<-p+geom_path(data = tribes_df, 
-               aes(x = long, y = lat, group = group),
-               color = 'azure4', size = .2)
+# p<-p+geom_path(data = tribes_df,
+#                aes(x = long, y = lat, group = group),
+#                color = 'azure4', size = .2)
+
+p<-p+geom_sf(data = tribes_df, fill = NA, color = 'azure4', size = .25)
 
 p<-p+geom_point(data = SWCities, aes(x = lon, y = lat), size = 1, 
                 shape = 20)
 
 p<-p+geom_text(data = SWCities, aes(x = lon, y = lat, label = City), 
-               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)
+               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)+
+  coord_sf(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)
 
 # write out file
-png(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_LatestDay.png"), width = 16, height = 8, units = "in", res = 300L)
+png(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_LatestDay.png"), width = 12, height = 8, units = "in", res = 300L)
 #grid.newpage()
 print(p, newpage = FALSE)
 dev.off()
 
 # add logos
 # Call back the plot
-plot <- image_read(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_LatestDay.png"))
+plot <- image_read(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_LatestDay.png"))
 # And bring in a logo
 #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
-logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
 logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
 # Stack them on top of each other
 #final_plot <- image_append((c(plot, logo)), stack = TRUE)
 #final_plot <- image_mosaic((c(plot, logo)))
-final_plot <- image_composite(plot, logo, offset = "+510+2150")
+final_plot <- image_composite(plot, logo, offset = "+250+2150")
 # And overwrite the plot without a logo
-image_write(final_plot, paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_LatestDay.png"))
+image_write(final_plot, paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_LatestDay.png"))
 
 # leaflet interactive
 pal <- colorNumeric(c("lightblue", "dodgerblue3", "palegreen","green4","salmon","orangered3",
@@ -1087,7 +1179,7 @@ leafMap<-leaflet() %>% addTiles() %>%
   addMouseCoordinates() %>%
   addImageQuery(gridStack[[max(nlayers(gridStack))]], type="mousemove", layerId = "Inches", prefix = "")
 
-saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_LatestDay.html"))
+saveWidget(leafMap, file=paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/leafletMaps/SW_Monsoon_LatestDay.html"))
 
 # ----- end LATEST DAILY ----
 
@@ -1102,17 +1194,33 @@ precLabs[1]<-"0.01"
 #precBreaksmin<-seq(1,19,2)
 
 #theme_set(theme_bw())
-names(gridStack)<-format(allDates, format="%b %d %Y")
-p<-gplot(gridStack) + geom_tile(aes(fill = value)) +
+names(gridStack)<-format(allDates, format="%b-%d")
+
+# Convert raster to dataframe for ggplot
+prec_df <- as.data.frame(gridStack, xy = TRUE, na.rm = FALSE)
+# convert to long format
+prec_df <- prec_df %>%
+  pivot_longer(
+    cols = matches("^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\."),
+    names_to = "date",
+    values_to = "value"
+  )
+
+p <- ggplot() +
+  geom_raster(data = prec_df, aes(x = x, y = y, fill = value)) +
+#theme_set(theme_bw())
+#names(gridStack)<-format(allDates, format="%b %d %Y")
+#p<-gplot(gridStack) + geom_tile(aes(fill = value)) +
   #scale_fill_gradient2(low = 'white', high = 'blue') +
   #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="darkgoldenrod", 
   #                     name="inches", limits=c(0,20),oob=squish)+
-  facet_wrap(~ variable) +
+  #facet_wrap(~ variable) +
+  facet_wrap(~ date) +
   scale_fill_gradientn(colours = precipCols, na.value="darkgoldenrod", 
                        name="inches", limits=c(0,6),oob=squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
   guides(fill= guide_colorbar(barheight=15,nbin = 500, raster = FALSE))+
   
-  coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
+  #coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
   xlab("Longitude") + ylab("Latitude") 
 
 p<-p +  geom_polygon( data=states, aes(x=X, y=Y, group = PID),colour="grey", fill=NA, size=0.25 )+
@@ -1130,28 +1238,28 @@ p<-p +  geom_polygon( data=states, aes(x=X, y=Y, group = PID),colour="grey", fil
         axis.ticks.x=element_blank())
 
 # write out file
-png(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_AllDaysGrid.png"),width = 16, height = 10, units = "in", res = 300L)
+png(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_AllDaysGrid.png"),width = 12, height = 10, units = "in", res = 300L)
 #grid.newpage()
 print(p, newpage = FALSE)
 dev.off()
 
 # add logos
 # Call back the plot
-plot <- image_read(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_AllDaysGrid.png"))
+plot <- image_read(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_AllDaysGrid.png"))
 # And bring in a logo
 #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
-logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
 logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
 # Stack them on top of each other
 #final_plot <- image_append((c(plot, logo)), stack = TRUE)
 #final_plot <- image_mosaic((c(plot, logo)))
 final_plot <- image_composite(plot, logo, offset = "+410+2760")
 # And overwrite the plot without a logo
-image_write(final_plot, paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/SW_Monsoon_AllDaysGrid.png"))
+image_write(final_plot, paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/SW_Monsoon_AllDaysGrid.png"))
 # END PLOT ALL DAYS THUMBNAILS ----
 
 # PLOT DAILIES ----
-# inDaily<-list.files("/home/crimmins/RProjects/ClimPlot/monsoonMaps/daily")
+# inDaily<-list.files("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/daily")
 # if(length(inDaily)==0){
 #   j=1
 # }else{
@@ -1173,7 +1281,14 @@ precLabs[1]<-"0.01"
 
 # loop through days, change j to 1
 for(i in 1:length(allDates)){
-    p<-gplot(gridStack[[i]]) + geom_tile(aes(fill = value)) +
+    
+  # Convert raster to dataframe for ggplot
+  prec_df <- as.data.frame(gridStack[[i]], xy = TRUE, na.rm = FALSE)
+  colnames(prec_df) <- c("x", "y", "value")  # Adjust if needed
+  
+  p <- ggplot() +
+    geom_raster(data = prec_df, aes(x = x, y = y, fill = value)) +
+  #p<-gplot(gridStack[[i]]) + geom_tile(aes(fill = value)) +
       #scale_fill_gradient2(low = 'white', high = 'blue') +
       #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="darkgoldenrod", 
       #                     name="inches", limits=c(0,20),oob=squish)+
@@ -1182,7 +1297,7 @@ for(i in 1:length(allDates)){
                            name="inches", limits=c(0,6),oob=squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
       guides(fill= guide_colorbar(barheight=15,nbin = 500, raster = FALSE))+
       
-      coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
+      #coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
       xlab("Longitude") + ylab("Latitude") 
     
     p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black", fill=NA, size=0.25 )+
@@ -1193,19 +1308,22 @@ for(i in 1:length(allDates)){
                           "\nThe University of Arizona\nhttps://cals.arizona.edu/climate/\nData Source: PRISM Climate Group\nRCC-ACIS"))+
       theme(plot.title=element_text(size=14, face = "bold"))
     
-    p<-p+geom_path(data = tribes_df, 
-                   aes(x = long, y = lat, group = group),
-                   color = 'azure4', size = .2)
+    # p<-p+geom_path(data = tribes_df,
+    #                aes(x = long, y = lat, group = group),
+    #                color = 'azure4', size = .2)
+    
+    p<-p+geom_sf(data = tribes_df, fill = NA, color = 'azure4', size = .25)
     
     p<-p+geom_point(data = SWCities, aes(x = lon, y = lat), size = 1, 
                     shape = 20)
     
     p<-p+geom_text(data = SWCities, aes(x = lon, y = lat, label = City), 
-                   size = 3, col = "black", fontface = "bold", nudge_y = 0.1)
+                   size = 3, col = "black", fontface = "bold", nudge_y = 0.1)+
+      coord_sf(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)
     
     # write out file
-    dayFileName<-paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/daily/SW_Monsoon_Precip_",allDates[i],".png")
-      png(dayFileName, width = 16, height = 8, units = "in", res = 300L)
+    dayFileName<-paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/daily/SW_Monsoon_Precip_",allDates[i],".png")
+      png(dayFileName, width = 12, height = 8, units = "in", res = 150L)
     #grid.newpage()
     print(p, newpage = FALSE)
     dev.off()
@@ -1215,12 +1333,12 @@ for(i in 1:length(allDates)){
     plot <- image_read(dayFileName)
     # And bring in a logo
     #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
-    logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
+    logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
     logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
     # Stack them on top of each other
     #final_plot <- image_append((c(plot, logo)), stack = TRUE)
     #final_plot <- image_mosaic((c(plot, logo)))
-    final_plot <- image_composite(plot, logo, offset = "+510+2150")
+    final_plot <- image_composite(plot, logo, offset = "+250+2150")
     # And overwrite the plot without a logo
     image_write(final_plot, dayFileName)
 }
@@ -1233,17 +1351,17 @@ for(i in 1:length(allDates)){
 
 # RMARKDOWN of DAILIES ----
 # create Rmarkdown html of daily maps
-#file.remove("/home/crimmins/RProjects/ClimPlot/monsoonMaps/dailyPrecip.html")
-render('/home/crimmins/RProjects/ClimPlot/createThumbsHTML_historical.Rmd', output_file='dailyPrecip.html',
-       output_dir=paste0('/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/',yearDir), clean=TRUE)
-  plots <- list.files(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/daily/"))
-  file.remove(paste0("/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/",yearDir,"/daily/",plots))
+#file.remove("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/dailyPrecip.html")
+render('/home/crimmins/RProjects/SWMonsoonMaps/createThumbsHTML_historical.Rmd', output_file='dailyPrecip.html',
+       output_dir=paste0('/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/',yearDir), clean=TRUE)
+  plots <- list.files(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/daily/"))
+  file.remove(paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/",yearDir,"/daily/",plots))
 
 # ----
 
 # create Website with markdown ----
-  render(paste0('/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/',yearDir,'/SWmonsoonTemplateHistorical.Rmd'), output_file='index.html',
-         output_dir=paste0('/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/',yearDir), clean=TRUE)
+  render(paste0('/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/',yearDir,'/SWmonsoonTemplateHistorical.Rmd'), output_file='index.html',
+         output_dir=paste0('/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/',yearDir), clean=TRUE)
 # ----  
   
 }  
@@ -1252,138 +1370,173 @@ render('/home/crimmins/RProjects/ClimPlot/createThumbsHTML_historical.Rmd', outp
 # trying mapview
 #names(gridStack)<-allDates
 #test<-mapView(gridStack, col.regions = precipCols, at = precBreaks, legend = TRUE, na.color="transparent")
-# mapshot(test, url="/home/crimmins/RProjects/ClimPlot/monsoonprecip.html")
-
-
+# mapshot(test, url="/home/crimmins/RProjects/SWMonsoonMaps/monsoonprecip.html")
 
 # RENDER NAV PAGE
-render('/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical/createHistoricalMonsoonNav.Rmd', output_file='past_SWUS_monsoon.html',
-       output_dir=paste0('/home/crimmins/RProjects/ClimPlot/monsoonMapshistorical'), clean=TRUE)
+render('/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical/createHistoricalMonsoonNav.Rmd', output_file='past_SWUS_monsoon.html',
+       output_dir=paste0('/home/crimmins/RProjects/SWMonsoonMaps/monsoonMapshistorical'), clean=TRUE)
+
+
 
 # CREATE CLIMATOLOGIES ----
-# # monthly values
-# # colorramp for total precip
-# precipCols<-colorRampPalette(c("lightblue", "dodgerblue3", "palegreen","green4","salmon","orangered3",
-#                                "lightgoldenrod1","orange2","plum2","purple"))(50)
-# precBreaks<-seq(0,9,1)
-# precLabs<-as.character(seq(0,9,1))
-# precLabs[10]<-">9"
-# precLabs[1]<-"0.01"
-# #precBreaksmin<-seq(1,19,2)
-# 
-# #theme_set(theme_bw())
-# names(JJASppt)<-c("June","July","August","September")
-# p<-gplot(JJASppt) + geom_tile(aes(fill = value)) +
-#   #scale_fill_gradient2(low = 'white', high = 'blue') +
-#   #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="darkgoldenrod", 
-#   #                     name="inches", limits=c(0,20),oob=squish)+
-#   facet_wrap(~ variable)+
-#   scale_fill_gradientn(colours = precipCols, na.value="darkgoldenrod", 
-#                        name="inches", limits=c(0,9),oob=squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
-#   guides(fill= guide_colorbar(barheight=15,nbin = 500, raster = FALSE))+
-#   
-#   coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
-#   xlab("Longitude") + ylab("Latitude") 
-# 
-# p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black", fill=NA, size=0.25 )+
-#   #scale_x_continuous(breaks = c(-120,-140))+
-#   #ggtitle("Daily Total Precip (inches) - PRISM")+
-#   ggtitle("Monthly Average Precipitation (1981-2010)")+
-#   labs(caption=paste0("Plot created: ",format(Sys.time(), "%Y-%m-%d"),
-#                       "\nThe University of Arizona\nhttps://cals.arizona.edu/climate/\nData Source: PRISM Climate Group"))+
-#   theme(plot.title=element_text(size=14, face = "bold"))
-# 
-# p<-p+geom_path(data = tribes_df, 
-#                aes(x = long, y = lat, group = group),
-#                color = 'azure4', size = .2)
-# 
-# p<-p+geom_point(data = SWCities, aes(x = lon, y = lat), size = 1, 
-#                 shape = 20)
-# 
-# p<-p+geom_text(data = SWCities, aes(x = lon, y = lat, label = City), 
-#                size = 2, col = "black", fontface = "bold", nudge_y = 0.15)
-# 
-# # write out file
-# png("/home/crimmins/RProjects/ClimPlot/monsoonMaps/climatology/SW_Monsoon_JJAS_Precip_Climatology.png", width = 16, height = 8, units = "in", res = 300L)
-# #grid.newpage()
-# print(p, newpage = FALSE)
-# dev.off()
-# 
-# # add logos
-# # Call back the plot
-# plot <- image_read("/home/crimmins/RProjects/ClimPlot/monsoonMaps/climatology/SW_Monsoon_JJAS_Precip_Climatology.png")
-# # And bring in a logo
-# #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
-# logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
-# logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
-# # Stack them on top of each other
-# #final_plot <- image_append((c(plot, logo)), stack = TRUE)
-# #final_plot <- image_mosaic((c(plot, logo)))
-# final_plot <- image_composite(plot, logo, offset = "+620+2150")
-# # And overwrite the plot without a logo
-# image_write(final_plot, "/home/crimmins/RProjects/ClimPlot/monsoonMaps/climatology/SW_Monsoon_JJAS_Precip_Climatology.png")
-# 
-# # Seasonal TOTAL
-# # colorramp for total precip
-# totalJJAS<-calc(JJASppt, sum, na.rm=TRUE)
-# precipCols<-colorRampPalette(c("lightblue", "dodgerblue3", "palegreen","green4","salmon","orangered3",
-#                                "lightgoldenrod1","orange2","plum2","purple"))(50)
-# precBreaks<-seq(0,20,2)
-# precLabs<-as.character(seq(0,20,2))
-# precLabs[11]<-">20"
-# precLabs[1]<-"0.01"
-# #precBreaksmin<-seq(1,19,2)
-# 
-# #theme_set(theme_bw())
-# p<-gplot(totalJJAS) + geom_tile(aes(fill = value)) +
-#   #scale_fill_gradient2(low = 'white', high = 'blue') +
-#   #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="darkgoldenrod", 
-#   #                     name="inches", limits=c(0,20),oob=squish)+
-#   scale_fill_gradientn(colours = precipCols, na.value="darkgoldenrod", 
-#                        name="inches", limits=c(0,20),oob=squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
-#   guides(fill= guide_colorbar(barheight=15,nbin = 500, raster = FALSE))+
-#   
-#   coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
-#   xlab("Longitude") + ylab("Latitude") 
-# 
-# p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black", fill=NA, size=0.25 )+
-#   #scale_x_continuous(breaks = c(-120,-140))+
-#   #ggtitle("Daily Total Precip (inches) - PRISM")+
-#   ggtitle("Average Seasonal (Jun-Jul-Aug-Sep) Total Precipitation (1981-2010)")+
-#   labs(caption=paste0("Plot created: ",format(Sys.time(), "%Y-%m-%d"),
-#                       "\nThe University of Arizona\nhttps://cals.arizona.edu/climate/\nData Source: PRISM Climate Group"))+
-#   theme(plot.title=element_text(size=14, face = "bold"))
-# 
-# p<-p+geom_path(data = tribes_df, 
-#                aes(x = long, y = lat, group = group),
-#                color = 'azure4', size = .2)
-# 
-# p<-p+geom_point(data = SWCities, aes(x = lon, y = lat), size = 1, 
-#                 shape = 20)
-# 
-# p<-p+geom_text(data = SWCities, aes(x = lon, y = lat, label = City), 
-#                size = 3, col = "black", fontface = "bold", nudge_y = 0.1)
-# 
-# # write out file
-# png("/home/crimmins/RProjects/ClimPlot/monsoonMaps/climatology/SW_Monsoon_Seasonal_Precip_Climatology.png", width = 16, height = 8, units = "in", res = 300L)
-# #grid.newpage()
-# print(p, newpage = FALSE)
-# dev.off()
-# 
-# # add logos
-# # Call back the plot
-# plot <- image_read("/home/crimmins/RProjects/ClimPlot/monsoonMaps/climatology/SW_Monsoon_Seasonal_Precip_Climatology.png")
-# # And bring in a logo
-# #logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
-# logo_raw <- image_read("/home/crimmins/RProjects/ClimPlot/logos/UA_CSAP_CLIMAS_logos_horiz.png") 
-# logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
-# # Stack them on top of each other
-# #final_plot <- image_append((c(plot, logo)), stack = TRUE)
-# #final_plot <- image_mosaic((c(plot, logo)))
-# final_plot <- image_composite(plot, logo, offset = "+490+2150")
-# # And overwrite the plot without a logo
-# image_write(final_plot, "/home/crimmins/RProjects/ClimPlot/monsoonMaps/climatology/SW_Monsoon_Seasonal_Precip_Climatology.png")
+# monthly values
+# colorramp for total precip
+precipCols<-colorRampPalette(c("lightblue", "dodgerblue3", "palegreen","green4","salmon","orangered3",
+                               "lightgoldenrod1","orange2","plum2","purple"))(50)
+precBreaks<-seq(0,9,1)
+precLabs<-as.character(seq(0,9,1))
+precLabs[10]<-">9"
+precLabs[1]<-"0.01"
+#precBreaksmin<-seq(1,19,2)
 
-  
+# load data
+JJASppt<-stack("/home/crimmins/RProjects/SWMonsoonMaps/PRISM/JJASppt.grd")
+JJASppt<-JJASppt/25.4
+
+#theme_set(theme_bw())
+names(JJASppt)<-c("June","July","August","September")
+
+# Vector of full month names
+month_names <- month.name
+
+# Convert raster to dataframe for ggplot
+prec_df <- as.data.frame(JJASppt, xy = TRUE, na.rm = FALSE)
+# convert to long format
+prec_df <- prec_df %>%
+  pivot_longer(
+    cols = any_of(month_names),
+    names_to = "date",
+    values_to = "value"
+  )
+
+p <- ggplot() +
+  geom_raster(data = prec_df, aes(x = x, y = y, fill = value)) + 
+#p<-gplot(JJASppt) + geom_tile(aes(fill = value)) +
+  #scale_fill_gradient2(low = 'white', high = 'blue') +
+  #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="darkgoldenrod",
+  #                     name="inches", limits=c(0,20),oob=squish)+
+  facet_wrap(~ date)+
+  scale_fill_gradientn(colours = precipCols, na.value="darkgoldenrod",
+                       name="inches", limits=c(0,9),oob=squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
+  guides(fill= guide_colorbar(barheight=15,nbin = 500, raster = FALSE))+
+
+  #coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
+  xlab("Longitude") + ylab("Latitude")
+
+p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black", fill=NA, size=0.25 )+
+  #scale_x_continuous(breaks = c(-120,-140))+
+  #ggtitle("Daily Total Precip (inches) - PRISM")+
+  ggtitle("Monthly Average Precipitation (1991-2020)")+
+  labs(caption=paste0("Plot created: ",format(Sys.time(), "%Y-%m-%d"),
+                      "\nThe University of Arizona\nhttps://cals.arizona.edu/climate/\nData Source: PRISM Climate Group"))+
+  theme(plot.title=element_text(size=14, face = "bold"))
+
+# p<-p+geom_path(data = tribes_df,
+#                aes(x = long, y = lat, group = group),
+#                color = 'azure4', size = .2)
+
+p<-p+geom_sf(data = tribes_df, fill = NA, color = 'azure4', size = .25)
+
+p<-p+geom_point(data = SWCities, aes(x = lon, y = lat), size = 1, 
+                shape = 20)
+
+p<-p+geom_text(data = SWCities, aes(x = lon, y = lat, label = City), 
+               size = 2.5, col = "black", fontface = "bold", nudge_y = 0.2)+
+  coord_sf(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)
+
+# write out file
+png("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/climatology/SW_Monsoon_JJAS_Precip_Climatology.png", width = 12, height = 8, units = "in", res = 300L)
+#grid.newpage()
+print(p, newpage = FALSE)
+dev.off()
+
+# add logos
+# Call back the plot
+plot <- image_read("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/climatology/SW_Monsoon_JJAS_Precip_Climatology.png")
+# And bring in a logo
+#logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
+logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png")
+logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
+# Stack them on top of each other
+#final_plot <- image_append((c(plot, logo)), stack = TRUE)
+#final_plot <- image_mosaic((c(plot, logo)))
+final_plot <- image_composite(plot, logo, offset = "+320+2150")
+# And overwrite the plot without a logo
+image_write(final_plot, "/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/climatology/SW_Monsoon_JJAS_Precip_Climatology.png")
+# 
+
+
+# Seasonal TOTAL
+# colorramp for total precip
+totalJJAS<-calc(JJASppt, sum, na.rm=TRUE)
+totalJJAS[totalJJAS == 0] <- NA
+precipCols<-colorRampPalette(c("lightblue", "dodgerblue3", "palegreen","green4","salmon","orangered3",
+                               "lightgoldenrod1","orange2","plum2","purple"))(50)
+precBreaks<-seq(0,20,2)
+precLabs<-as.character(seq(0,20,2))
+precLabs[11]<-">20"
+precLabs[1]<-"0.01"
+#precBreaksmin<-seq(1,19,2)
+
+# Convert raster to dataframe for ggplot
+prec_df <- as.data.frame(totalJJAS, xy = TRUE, na.rm = FALSE)
+colnames(prec_df) <- c("x", "y", "value")  # Adjust if needed  
+
+#theme_set(theme_bw())
+p <- ggplot() +
+  geom_raster(data = prec_df, aes(x = x, y = y, fill = value)) + 
+#p<-gplot(totalJJAS) + geom_tile(aes(fill = value)) +
+  #scale_fill_gradient2(low = 'white', high = 'blue') +
+  #scale_fill_distiller(palette = "Spectral", direction = -1, na.value="darkgoldenrod",
+  #                     name="inches", limits=c(0,20),oob=squish)+
+  scale_fill_gradientn(colours = precipCols, na.value="darkgoldenrod",
+                       name="inches", limits=c(0,20),oob=squish, breaks=precBreaks, labels=precLabs, expand=NULL)+
+  guides(fill= guide_colorbar(barheight=15,nbin = 500, raster = FALSE))+
+
+  #coord_equal(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)+
+  xlab("Longitude") + ylab("Latitude")
+
+p<-p +  geom_polygon( data=all_states, aes(x=X, y=Y, group = PID),colour="black", fill=NA, size=0.25 )+
+  #scale_x_continuous(breaks = c(-120,-140))+
+  #ggtitle("Daily Total Precip (inches) - PRISM")+
+  ggtitle("Average Seasonal (Jun-Jul-Aug-Sep) Total Precipitation (1991-2020)")+
+  labs(caption=paste0("Plot created: ",format(Sys.time(), "%Y-%m-%d"),
+                      "\nThe University of Arizona\nhttps://cals.arizona.edu/climate/\nData Source: PRISM Climate Group"))+
+  theme(plot.title=element_text(size=14, face = "bold"))
+
+# p<-p+geom_path(data = tribes_df,
+#                aes(x = long, y = lat, group = group),
+#                color = 'azure4', size = .2)
+
+p<-p+geom_sf(data = tribes_df, fill = NA, color = 'azure4', size = .25)
+
+p<-p+geom_point(data = SWCities, aes(x = lon, y = lat), size = 1, 
+                shape = 20)
+
+p<-p+geom_text(data = SWCities, aes(x = lon, y = lat, label = City), 
+               size = 3, col = "black", fontface = "bold", nudge_y = 0.1)+
+  coord_sf(xlim = c(-115,-102), ylim = c(31,38), expand = FALSE)
+
+# write out file
+png("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/climatology/SW_Monsoon_Seasonal_Precip_Climatology.png", width = 12, height = 8, units = "in", res = 300L)
+#grid.newpage()
+print(p, newpage = FALSE)
+dev.off()
+
+# add logos
+# Call back the plot
+plot <- image_read("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/climatology/SW_Monsoon_Seasonal_Precip_Climatology.png")
+# And bring in a logo
+#logo_raw <- image_read("./logos/UA_CLIMAS_logos.png")
+logo_raw <- image_read("/home/crimmins/RProjects/logos/UA_CSAP_CLIMAS_logos_horiz.png")
+logo <- image_resize(logo_raw, geometry_size_percent(width=120,height = 120))
+# Stack them on top of each other
+#final_plot <- image_append((c(plot, logo)), stack = TRUE)
+#final_plot <- image_mosaic((c(plot, logo)))
+final_plot <- image_composite(plot, logo, offset = "+320+2150")
+# And overwrite the plot without a logo
+image_write(final_plot, "/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/climatology/SW_Monsoon_Seasonal_Precip_Climatology.png")
+
+
   
   
