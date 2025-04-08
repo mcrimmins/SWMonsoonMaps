@@ -44,11 +44,12 @@ library(dplyr)
 
 # auto date range...start with 6-15 and run on 6-17 to get two days of data, end on 10/1
  dateRangeStart="2024-06-15"
- dateRangeEnd=as.Date(format(as.POSIXct(Sys.time()),usetz=TRUE, tz="Etc/GMT+7"))-1 # date on local time zone
-  if(dateRangeEnd<"2024-06-16" | dateRangeEnd>="2024-10-01"){
-    stop()
-  }
-
+ # dateRangeEnd=as.Date(format(as.POSIXct(Sys.time()),usetz=TRUE, tz="Etc/GMT+7"))-1 # date on local time zone
+ #  if(dateRangeEnd<"2024-06-16" | dateRangeEnd>="2024-10-01"){
+ #    stop()
+ #  }
+ dateRangeEnd<-"2024-09-30"
+ 
 # generate dates -- keep with PRISM date
 allDates<-seq(as.Date(dateRangeStart), as.Date(dateRangeEnd),1)
   #allDates<-as.Date(format(allDates, format="%m-%d-%Y"),format="%m-%d-%Y")
@@ -550,13 +551,13 @@ pal <- colorNumeric(c("lightblue", "dodgerblue3", "palegreen","green4","salmon",
 crs(totalPrecipAll) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 leafMap<-leaflet() %>% addTiles() %>%
-          addRasterImage(totalPrecipAll, colors = pal, opacity = 0.8, layerId = "Inches") %>%
+          addRasterImage(totalPrecipAll, colors = pal, opacity = 0.8, layerId = "Inches", group="Inches") %>%
           addLegend(pal = pal, values = values(totalPrecipAll),
                     title=paste0("Total Precipitation (in.):<br> ",allDates[1]," to ",allDates[length(allDates)]))%>%
           addMouseCoordinates() %>%
-          addImageQuery(totalPrecipAll, type="mousemove", layerId = "Inches", prefix = "")
+          addImageQuery(totalPrecipAll, type="mousemove", layerId = "Inches", prefix = "", project=TRUE, digits=2)
 
-saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_TotalPrecip.html", selfcontained = FALSE)
+saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_TotalPrecip.html", selfcontained = TRUE)
 
 # ----- end Total Precip ----
 
@@ -635,13 +636,13 @@ pal <- colorNumeric(c("darkgoldenrod4", "white", "darkgreen","blue1","deepskyblu
 crs(percPrecip) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 leafMap<-leaflet() %>% addTiles() %>%
-  addRasterImage(percPrecip, colors = pal, opacity = 0.8, layerId = "% of Avg") %>%
+  addRasterImage(percPrecip, colors = pal, opacity = 0.8, layerId = "% of Avg", group="% of Avg") %>%
   addLegend(pal = pal, values = values(percPrecip),
             title=paste0("% of Avg Precip:<br> ",allDates[1]," to ",allDates[length(allDates)]))%>%
   addMouseCoordinates() %>%
-  addImageQuery(percPrecip, type="mousemove", layerId = "% of Avg", digits = 0, prefix = "")
+  addImageQuery(percPrecip, type="mousemove", layerId = "% of Avg", prefix = "", project=TRUE, digits=0)
 
-saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_PercentPrecip.html", selfcontained = FALSE)
+saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_PercentPrecip.html", selfcontained = TRUE)
 # ----- end PERCENT AVG ----
 
 # RRECIP PERCENTILES Map -----
@@ -719,13 +720,13 @@ pal <- colorNumeric(c("darkgoldenrod4", "white", "darkgreen"), c(0,100),
 crs(percRankPrecip) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 leafMap<-leaflet() %>% addTiles() %>%
-  addRasterImage(percRankPrecip, colors = pal, opacity = 0.8, layerId = "%tile") %>%
+  addRasterImage(percRankPrecip, colors = pal, opacity = 0.8, layerId = "%tile", group="%tile") %>%
   addLegend(pal = pal, values = values(percRankPrecip),
             title=paste0("%-tile rank of total precip:<br> ",allDates[1]," to ",allDates[length(allDates)]))%>%
   addMouseCoordinates() %>%
-  addImageQuery(percRankPrecip, type="mousemove", layerId = "%tile", digits = 0, prefix = "")
+  addImageQuery(percRankPrecip, type="mousemove", layerId = "%tile", prefix = "", project=TRUE, digits=0)
 
-saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_RankPrecip.html", selfcontained = FALSE)
+saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_RankPrecip.html", selfcontained = TRUE)
 # ----- end PERCENT AVG ----
 
 # RAIN DAYS Percent Map -----
@@ -803,13 +804,13 @@ pal <- colorNumeric(c("yellow2", "green", "blue","red","orange"), c(0,75),
 crs(percRainDays) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 leafMap<-leaflet() %>% addTiles() %>%
-  addRasterImage(percRainDays, colors = pal, opacity = 0.8, layerId = "% days") %>%
+  addRasterImage(percRainDays, colors = pal, opacity = 0.8, layerId = "% days", group="% days") %>%
   addLegend(pal = pal, values = values(percRainDays),
             title=paste0("% Rain Days:<br> ",allDates[1]," to ",allDates[length(allDates)]))%>%
   addMouseCoordinates() %>%
-  addImageQuery(percRainDays, type="mousemove", layerId = "% days", digits = 0, prefix = "")
+  addImageQuery(percRainDays, type="mousemove", layerId = "% days", prefix = "", project=TRUE, digits=0)
 
-saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_PercentDays.html", selfcontained = FALSE)
+saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_PercentDays.html", selfcontained = TRUE)
 # ----- end PERCENT AVG ----
 
 # SDII Map -----
@@ -887,13 +888,13 @@ pal <- colorNumeric(c("yellow", "blue", "red","orange"), c(0,1.5),
 crs(sdii) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 leafMap<-leaflet() %>% addTiles() %>%
-  addRasterImage(sdii, colors = pal, opacity = 0.8, layerId = "in per day") %>%
+  addRasterImage(sdii, colors = pal, opacity = 0.8, layerId = "in per day", group="in per day") %>%
   addLegend(pal = pal, values = values(sdii),
             title=paste0("Intensity Index:<br> ",allDates[1]," to ",allDates[length(allDates)]))%>%
   addMouseCoordinates() %>%
-  addImageQuery(sdii, type="mousemove", layerId = "in per day", digits = 2, prefix = "")
+  addImageQuery(sdii, type="mousemove", layerId = "in per day", prefix = "", project=TRUE, digits=2)
 
-saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_IntensityIndex.html", selfcontained = FALSE)
+saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_IntensityIndex.html", selfcontained = TRUE)
 # ----- end SDII ----
 
 # MAX DAILY precip Map -----
@@ -972,13 +973,13 @@ pal <- colorNumeric(c("lightblue", "dodgerblue3", "palegreen","green4","salmon",
 crs(maxRain) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 leafMap<-leaflet() %>% addTiles() %>%
-  addRasterImage(maxRain, colors = pal, opacity = 0.8, layerId = "Inches") %>%
+  addRasterImage(maxRain, colors = pal, opacity = 0.8, layerId = "Inches", group="Inches") %>%
   addLegend(pal = pal, values = values(maxRain),
             title=paste0("Max 1-day precip:<br> ",allDates[1]," to ",allDates[length(allDates)]))%>%
   addMouseCoordinates() %>%
-  addImageQuery(maxRain, type="mousemove", layerId = "Inches", prefix = "")
+  addImageQuery(maxRain, type="mousemove", layerId = "Inches", prefix = "", project=TRUE, digits=2)
 
-saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_MaxPrecip.html", selfcontained = FALSE)
+saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_MaxPrecip.html", selfcontained = TRUE)
 
 # ----- end MAX DAILY ----
 
@@ -1080,16 +1081,16 @@ crs(daysSince) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 leafMap<-leaflet() %>%
   setView(lng = -109.046436, lat = 34.341280, zoom = 07) %>%
   addTiles() %>%
-  addRasterImage(daysSince, colors = pal, opacity = 0.8, layerId = "Days") %>%
+  addRasterImage(daysSince, colors = pal, opacity = 0.8, layerId = "Days", group="Days") %>%
   addLegend(pal = pal, values = values(daysSince),
             title=paste0("Days since >0.05 in:<br> ",allDates[length(allDates)]))%>%
   addMouseCoordinates() %>%
-  addImageQuery(daysSince, type="mousemove", layerId = "Days", prefix = "")
+  addImageQuery(daysSince, type="mousemove", layerId = "Days", prefix = "", project=TRUE, digits=0)
   #addControl(title, position = "topleft", className="map-title")
   #addLogo("https://cals.arizona.edu/climate/misc/UA_CSAP_CLIMAS_logos.png", src = "remote",
   #        position="bottomleft",width=210, height=129)
 
-saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_DaysSince.html", selfcontained = FALSE)
+saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_DaysSince.html", selfcontained = TRUE)
 # END DAYS SINCE ----
 
 # LATEST DAILY precip Map -----
@@ -1176,13 +1177,13 @@ pal <- colorNumeric(c("lightblue", "dodgerblue3", "palegreen","green4","salmon",
 crs(gridStack) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 leafMap<-leaflet() %>% addTiles() %>%
-  addRasterImage(gridStack[[max(nlayers(gridStack))]], colors = pal, opacity = 0.8, layerId = "Inches") %>%
+  addRasterImage(gridStack[[max(nlayers(gridStack))]], colors = pal, opacity = 0.8, layerId = "Inches", group="Inches") %>%
   addLegend(pal = pal, values = values(gridStack[[max(nlayers(gridStack))]]),
             title=paste0("Total precip:<br> ",allDates[length(allDates)]))%>%
   addMouseCoordinates() %>%
-  addImageQuery(gridStack[[max(nlayers(gridStack))]], type="mousemove", layerId = "Inches", prefix = "")
+  addImageQuery(gridStack[[max(nlayers(gridStack))]], type="mousemove", layerId = "Inches", prefix = "", project=TRUE, digits=2)
 
-saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_LatestDay.html",selfcontained = FALSE)
+saveWidget(leafMap, file="/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/leafletMaps/SW_Monsoon_LatestDay.html",selfcontained = TRUE)
 
 # ----- end LATEST DAILY ----
 
@@ -1326,7 +1327,7 @@ for(i in 1:length(allDates)){
     
     # write out file
     dayFileName<-paste0("/home/crimmins/RProjects/SWMonsoonMaps/monsoonMaps/daily/SW_Monsoon_Precip_",allDates[i],".png")
-      png(dayFileName, width = 12, height = 8, units = "in", res = 150L)
+      png(dayFileName, width = 12, height = 8, units = "in", res = 100L)
     #grid.newpage()
     print(p, newpage = FALSE)
     dev.off()
@@ -1344,6 +1345,7 @@ for(i in 1:length(allDates)){
     final_plot <- image_composite(plot, logo, offset = "+250+2150")
     # And overwrite the plot without a logo
     image_write(final_plot, dayFileName)
+    gc()
 }
 
 # CLEAN OUT DAILY DIR - DANGER
