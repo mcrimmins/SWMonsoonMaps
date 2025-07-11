@@ -43,12 +43,12 @@ library(dplyr)
 #dateRangeEnd="2019-09-30"
 
 # auto date range...start with 6-15 and run on 6-17 to get two days of data, end on 10/1
- dateRangeStart="2024-06-15"
- # dateRangeEnd=as.Date(format(as.POSIXct(Sys.time()),usetz=TRUE, tz="Etc/GMT+7"))-1 # date on local time zone
- #  if(dateRangeEnd<"2024-06-16" | dateRangeEnd>="2024-10-01"){
- #    stop()
- #  }
- dateRangeEnd<-"2024-09-30"
+ dateRangeStart="2025-06-15"
+ dateRangeEnd=as.Date(format(as.POSIXct(Sys.time()),usetz=TRUE, tz="Etc/GMT+7"))-1 # date on local time zone
+  if(dateRangeEnd<"2025-06-16" | dateRangeEnd>="2025-10-01"){
+    stop()
+  }
+ #dateRangeEnd<-"2025-09-30"
  
 # generate dates -- keep with PRISM date
 allDates<-seq(as.Date(dateRangeStart), as.Date(dateRangeEnd),1)
@@ -1198,7 +1198,8 @@ precLabs[1]<-"0.01"
 #precBreaksmin<-seq(1,19,2)
 
 #theme_set(theme_bw())
-names(gridStack)<-format(allDates, format="%b-%d")
+names(gridStack)<-format(allDates, format="%b-%d-%Y")
+
 
 # Convert raster to dataframe for ggplot
 prec_df <- as.data.frame(gridStack, xy = TRUE, na.rm = FALSE)
@@ -1209,6 +1210,8 @@ prec_df <- prec_df %>%
     names_to = "date",
     values_to = "value"
   )
+# convert prec_df$date to Date format
+prec_df$date <- as.Date(prec_df$date, format = "%b.%d.%Y")
 
 p <- ggplot() +
   geom_raster(data = prec_df, aes(x = x, y = y, fill = value)) +
